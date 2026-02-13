@@ -31,7 +31,7 @@ public class StoreController {
         return ResponseEntity.ok(storeService.createStore(storeDto, user));
     }
 
-    @GetMapping
+    @GetMapping("/{id}")
     public ResponseEntity<StoreDto> getStoreById(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String token
@@ -63,7 +63,7 @@ public class StoreController {
         return ResponseEntity.ok(storeService.getStoreByEmployee());
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}/update")
     public ResponseEntity<StoreDto> updateStore(
             @PathVariable UUID id,
             @RequestBody StoreDto storeDto
@@ -71,7 +71,7 @@ public class StoreController {
         return ResponseEntity.ok(storeService.updateStore(id, storeDto));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}/moderate")
     public ResponseEntity<StoreDto> moderateStore(
             @PathVariable UUID id,
             @RequestParam EStoreStatus status
