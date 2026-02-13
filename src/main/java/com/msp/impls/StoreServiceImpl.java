@@ -1,5 +1,6 @@
 package com.msp.impls;
 
+import com.msp.enums.EStoreStatus;
 import com.msp.exceptions.UserException;
 import com.msp.mappers.StoreMapper;
 import com.msp.models.Store;
@@ -87,5 +88,15 @@ public class StoreServiceImpl implements StoreService {
             throw new UserException("You don't have permission to access this store!");
         }
         return StoreMapper.toDto(currentUser.getStore());
+    }
+
+    @Override
+    public StoreDto moderateStore(UUID id, EStoreStatus status) throws Exception {
+        Store store = storeRepo.findById(id).orElseThrow(
+                ()-> new Exception("Store Not Found!")
+        );
+        store.setStatus(status);
+        Store updatedScore = storeRepo.save(store);
+        return StoreMapper.toDto(updatedScore);
     }
 }

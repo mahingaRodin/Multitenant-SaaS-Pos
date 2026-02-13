@@ -1,6 +1,7 @@
 package com.msp.controllers;
 
 
+import com.msp.enums.EStoreStatus;
 import com.msp.mappers.StoreMapper;
 import com.msp.models.User;
 import com.msp.payloads.dtos.StoreDto;
@@ -70,7 +71,15 @@ public class StoreController {
         return ResponseEntity.ok(storeService.updateStore(id, storeDto));
     }
 
-    @DeleteMapping("/{id}")
+    @PutMapping("/{id}")
+    public ResponseEntity<StoreDto> moderateStore(
+            @PathVariable UUID id,
+            @RequestParam EStoreStatus status
+            ) throws Exception {
+        return ResponseEntity.ok(storeService.moderateStore(id, status));
+    }
+
+    @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> deleteStore(
             @PathVariable UUID id
     ) throws Exception {
