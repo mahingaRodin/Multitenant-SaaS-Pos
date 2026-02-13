@@ -1,6 +1,6 @@
 package com.msp.models;
 
-import com.msp.enums.UserRole;
+import com.msp.enums.EUserRole;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
@@ -32,8 +32,11 @@ public class User {
     private String email;
     private String phone;
 
+    @ManyToOne
+    private Store store;
+
     @Column(nullable = false)
-    private UserRole role;
+    private EUserRole role;
 
     @Column(nullable = false)
     private String password;

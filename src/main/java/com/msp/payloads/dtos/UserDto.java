@@ -1,6 +1,6 @@
 package com.msp.payloads.dtos;
 
-import com.msp.enums.UserRole;
+import com.msp.enums.EUserRole;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -13,7 +13,7 @@ public class UserDto {
     private String lastName;
     private String email;
     private String phone;
-    private UserRole role;
+    private EUserRole role;
     private String password;
 
     private LocalDateTime createdAt;

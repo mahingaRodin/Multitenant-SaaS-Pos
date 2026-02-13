@@ -1,6 +1,6 @@
 package com.msp.enums;
 
-public enum UserRole {
+public enum EUserRole {
     ROLE_USER,
     ROLE_ADMIN,
     ROLE_STORE_MANAGER,

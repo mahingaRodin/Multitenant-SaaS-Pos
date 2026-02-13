@@ -1,7 +1,7 @@
 package com.msp.impls;
 
 import com.msp.configs.JwtProvider;
-import com.msp.enums.UserRole;
+import com.msp.enums.EUserRole;
 import com.msp.exceptions.UserException;
 import com.msp.mappers.UserMapper;
 import com.msp.models.User;
@@ -40,7 +40,7 @@ public class AuthServiceImpl implements AuthService {
         if(user != null) {
             throw new UserException("Email already in use !");
         }
-        if(userDto.getRole().equals(UserRole.ROLE_ADMIN)) {
+        if(userDto.getRole().equals(EUserRole.ROLE_ADMIN)) {
             throw new UserException("Role Admin isn't Allowed!");
         }
         User newUser = new User();
