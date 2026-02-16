@@ -2,14 +2,18 @@ package com.msp.payloads.dtos;
 
 import com.msp.models.Store;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductDto {
     private UUID id;
     private String name;
@@ -19,6 +23,7 @@ public class ProductDto {
     private Double sellingPrice;
     private String brand;
     private String image;
+    private CategoryDto category;
     private UUID categoryId;
     private UUID storeId;
 

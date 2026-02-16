@@ -1,10 +1,12 @@
 package com.msp.impls;
 
 import com.msp.mappers.ProductMapper;
+import com.msp.models.Category;
 import com.msp.models.Product;
 import com.msp.models.Store;
 import com.msp.models.User;
 import com.msp.payloads.dtos.ProductDto;
+import com.msp.repositories.CategoryRepository;
 import com.msp.repositories.ProductRepository;
 import com.msp.repositories.StoreRepository;
 import com.msp.services.ProductService;
@@ -22,6 +24,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepo;
     private final StoreRepository storeRepo;
+    private final CategoryRepository catRepo;
 
     @Override
     public ProductDto createProduct(ProductDto productDto, User user) throws Exception {
@@ -30,7 +33,10 @@ public class ProductServiceImpl implements ProductService {
         ).orElseThrow(
                 () -> new Exception("Store Not Found")
         );
-        Product product = ProductMapper.toEntity(productDto, store);
+        Category category = catRepo.findById(productDto.getCategoryId()).orElseThrow(
+                ()-> new Exception("Category Not Found")
+        );
+        Product product = ProductMapper.toEntity(productDto, store, category);
         Product savedProduct = productRepo.save(product);
         return ProductMapper.toDto(savedProduct);
     }
@@ -40,6 +46,12 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepo.findById(id).orElseThrow(
                 () -> new Exception("Product Not Found!")
         );
+        if(productDto.getCategoryId() != null) {
+            Category category = catRepo.findById(productDto.getCategoryId()).orElseThrow(
+                    () -> new Exception("Category Not Found!")
+            );
+            product.setCategory(category);
+        }
         product.setName(productDto.getName());
         product.setDescription(productDto.getDescription());
         product.setSku(productDto.getSku());
