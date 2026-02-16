@@ -2,7 +2,6 @@ package com.msp.payloads.dtos;
 
 import com.msp.models.Branch;
 import com.msp.models.Product;
-import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
 
