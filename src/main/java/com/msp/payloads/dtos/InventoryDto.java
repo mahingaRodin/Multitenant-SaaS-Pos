@@ -1,7 +1,5 @@
 package com.msp.payloads.dtos;
 
-import com.msp.models.Branch;
-import com.msp.models.Product;
 import lombok.Builder;
 import lombok.Data;
 
@@ -12,8 +10,10 @@ import java.util.UUID;
 @Builder
 public class InventoryDto {
     private UUID id;
-    private Branch branch;
-    private Product product;
+    private BranchDto branch;
+    private UUID branchId;
+    private ProductDto product;
+    private UUID productId;
     private Integer quantity;
     private LocalTime lastUpdate;
 }
