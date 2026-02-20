@@ -16,6 +16,9 @@ public class UserDto {
     private EUserRole role;
     private String password;
 
+    private UUID branchId;
+    private UUID storeId;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
