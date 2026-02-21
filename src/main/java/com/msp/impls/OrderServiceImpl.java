@@ -15,8 +15,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -78,32 +81,63 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDto> getOrdersByBranch(UUID branchId, UUID customerId, UUID cashierId, EPaymentType paymentType, EOrderStatus orderStatus) throws Exception {
-        return List.of();
+    public List<OrderDto> getOrdersByBranch(UUID branchId,
+                                            UUID customerId,
+                                            UUID cashierId,
+                                            EPaymentType paymentType,
+                                            EOrderStatus orderStatus) throws Exception {
+        return orderRepository.findByBranchId(branchId).stream()
+                .filter(order -> customerId == null ||
+                        (order.getCustomer() != null &&
+                                order.getCustomer().getId().equals(customerId)))
+                .filter(order -> cashierId==null ||
+                        order.getCashier()!=null &&
+                                order.getCashier().getId().equals(customerId))
+                .filter(order -> paymentType==null ||
+                order.getPaymentType()==paymentType)
+                .map(OrderMapper::toDto).collect(Collectors.toList());
     }
 
     @Override
     public List<OrderDto> getOrderByCashier(UUID cashierId) {
-        return List.of();
+        return orderRepository.findByCashierId(cashierId)
+                .stream()
+                .map(OrderMapper::toDto).collect(Collectors.toList());
     }
 
     @Override
     public void deleteOrder(UUID id) throws Exception {
-
+        Order order = orderRepository.findById(id).orElseThrow(
+                () -> new Exception("Order not Found with id: "+id)
+        );
+        orderRepository.delete(order);
     }
 
     @Override
     public List<OrderDto> getTodayOrderByBranch(UUID branchId) throws Exception {
-        return List.of();
+        LocalDate today = LocalDate.now();
+        LocalDateTime start = today.atStartOfDay();
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
+        return orderRepository.findByBranchIdAndCreatedAtBetween(
+                branchId, start, end
+        ).stream().map(
+                OrderMapper::toDto
+        ).collect(Collectors.toList());
     }
 
     @Override
     public List<OrderDto> getOrderByCustomerId(UUID customerId) throws Exception {
-        return List.of();
+        return orderRepository.findByCustomerId(customerId)
+                .stream().map(
+                        OrderMapper::toDto
+                ).collect(Collectors.toList());
     }
 
     @Override
     public List<OrderDto> getTop5RecentOrdersByBranchId(UUID branchId) throws Exception {
-        return List.of();
+        return orderRepository.findTop5ByBranchIdOrderByCreatedAtDesc(branchId)
+                .stream().map(
+                        OrderMapper::toDto
+                ).collect(Collectors.toList());
     }
 }
