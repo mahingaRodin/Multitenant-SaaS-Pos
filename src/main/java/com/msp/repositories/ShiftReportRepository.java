@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface ShiftReportRepository extends JpaRepository<ShiftReport, UUID> {
     List<ShiftReport> findByCashierId(UUID cashierId);
     List<ShiftReport> findByBranchId(UUID branchId);
-    Optional<ShiftReport> findTopByCashierAndShiftEndIsNUllOrderByShiftStartDesc(
+    Optional<ShiftReport> findTopByCashierAndShiftEndIsNullOrderByShiftStartDesc(
             User cashier
     );
     Optional<ShiftReport> findByCashierAndShiftStartBetween(

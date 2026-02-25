@@ -1,7 +1,6 @@
-package com.msp.controllers;
+package com.msp.impls;
 
 import com.msp.enums.EPaymentType;
-import com.msp.exceptions.UserException;
 import com.msp.mappers.ShiftReportMapper;
 import com.msp.models.*;
 import com.msp.payloads.dtos.ShiftReportDto;
@@ -53,7 +52,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     @Override
     public ShiftReportDto endShift(UUID shiftReportId, LocalDateTime shiftEnd) throws Exception {
         User currentUser = userService.getCurrentUser();
-        ShiftReport shiftReport = shiftReportRepository.findTopByCashierAndShiftEndIsNUllOrderByShiftStartDesc(currentUser)
+        ShiftReport shiftReport = shiftReportRepository.findTopByCashierAndShiftEndIsNullOrderByShiftStartDesc(currentUser)
                 .orElseThrow(()-> new Exception("Shift not found"));
         shiftReport.setShiftEnd(shiftEnd);
         List<Refund> refunds = refundRepository.findByCashierIdAndCreatedAtBetween(
@@ -120,7 +119,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     public ShiftReportDto getCurrentShiftProgress(UUID cashierId) throws Exception {
         User currentUser = userService.getCurrentUser();
         ShiftReport shift = shiftReportRepository
-                .findTopByCashierAndShiftEndIsNUllOrderByShiftStartDesc(currentUser)
+                .findTopByCashierAndShiftEndIsNullOrderByShiftStartDesc(currentUser)
                 .orElseThrow(() -> new Exception("No Active Shift Found for Cashier!"));
         LocalDateTime now = LocalDateTime.now();
 
@@ -130,13 +129,15 @@ public class ShiftReportServiceImpl implements ShiftService {
         List<Refund> refunds = refundRepository.findByCashierIdAndCreatedAtBetween(
                 currentUser.getId(),
                 shift.getShiftStart(),
-                shift.getShiftEnd()
+                now
         );
         double totalRefunds = refunds.stream()
                 .mapToDouble(refund -> refund.getAmount() != null?
                         refund.getAmount():0.0).sum();
+        System.out.println("total refunds: " +totalRefunds);
 
-        double totalSales = orders.stream().mapToDouble(Order::getTotalAmount).sum();
+        double totalSales = orders.stream()
+                .mapToDouble(Order::getTotalAmount).sum();
         int totalOrders = orders.size();
 
         double netSales = totalSales-totalRefunds;
