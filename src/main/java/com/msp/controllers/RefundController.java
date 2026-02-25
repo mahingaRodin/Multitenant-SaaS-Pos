@@ -71,9 +71,9 @@ public class RefundController {
 
     @GetMapping("/{id}")
     public ResponseEntity<RefundDto> getRefundById(
-            @PathVariable UUID refundId
+            @PathVariable UUID id
     ) throws Exception {
-        RefundDto refund = refundService.getRefundById(refundId);
+        RefundDto refund = refundService.getRefundById(id);
         return ResponseEntity.ok(refund);
     }
 }
