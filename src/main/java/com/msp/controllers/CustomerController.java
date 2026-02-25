@@ -2,7 +2,7 @@ package com.msp.controllers;
 
 import com.msp.payloads.dtos.CustomerDto;
 import com.msp.payloads.dtos.CustomerUpdateDto;
-import com.msp.payloads.response.ApiResponse;
+import com.msp.payloads.response.ApiResponse2;
 import com.msp.services.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,12 +34,12 @@ public class CustomerController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteCustomer(
+    public ResponseEntity<ApiResponse2> deleteCustomer(
             @PathVariable UUID id
     ) throws Exception {
         customerService.deleteCustomer(id);
 
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse2 apiResponse = new ApiResponse2();
         apiResponse.setMessage("Customer Deleted Successfully!");
         return ResponseEntity.ok(apiResponse);
     }

@@ -5,7 +5,7 @@ import com.msp.enums.EStoreStatus;
 import com.msp.mappers.StoreMapper;
 import com.msp.models.User;
 import com.msp.payloads.dtos.StoreDto;
-import com.msp.payloads.response.ApiResponse;
+import com.msp.payloads.response.ApiResponse2;
 import com.msp.services.StoreService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -80,11 +80,11 @@ public class StoreController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteStore(
+    public ResponseEntity<ApiResponse2> deleteStore(
             @PathVariable UUID id
     ) throws Exception {
         storeService.deleteStore(id);
-        ApiResponse response = new ApiResponse();
+        ApiResponse2 response = new ApiResponse2();
         response.setMessage("Store Deleted Successfully!");
         return ResponseEntity.ok(response);
     }

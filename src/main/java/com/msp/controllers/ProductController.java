@@ -2,7 +2,7 @@ package com.msp.controllers;
 
 import com.msp.models.User;
 import com.msp.payloads.dtos.ProductDto;
-import com.msp.payloads.response.ApiResponse;
+import com.msp.payloads.response.ApiResponse2;
 import com.msp.services.ProductService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
@@ -68,14 +68,14 @@ public class ProductController {
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteProduct(
+    public ResponseEntity<ApiResponse2> deleteProduct(
             @PathVariable UUID id,
             @RequestHeader("Authorization") String token
     ) throws Exception {
         User user = userService.getCurrentUserFromToken(token);
             productService.deleteProduct(
                     id,user);
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse2 apiResponse = new ApiResponse2();
         apiResponse.setMessage("Product Deleted Successfully!");
         return ResponseEntity.ok(
                 apiResponse

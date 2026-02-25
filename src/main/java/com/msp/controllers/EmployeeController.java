@@ -3,7 +3,7 @@ package com.msp.controllers;
 import com.msp.enums.EUserRole;
 import com.msp.models.User;
 import com.msp.payloads.dtos.UserDto;
-import com.msp.payloads.response.ApiResponse;
+import com.msp.payloads.response.ApiResponse2;
 import com.msp.services.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -46,11 +46,11 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteEmployee(
+    public ResponseEntity<ApiResponse2> deleteEmployee(
             @PathVariable UUID id
     ) throws Exception {
         employeeService.deleteEmployee(id);
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse2 apiResponse = new ApiResponse2();
         apiResponse.setMessage("Employee deleted");
         return ResponseEntity.ok(apiResponse);
     }

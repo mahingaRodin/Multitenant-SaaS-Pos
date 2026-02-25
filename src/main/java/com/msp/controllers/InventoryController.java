@@ -1,8 +1,7 @@
 package com.msp.controllers;
 
-import com.msp.models.Inventory;
 import com.msp.payloads.dtos.InventoryDto;
-import com.msp.payloads.response.ApiResponse;
+import com.msp.payloads.response.ApiResponse2;
 import com.msp.services.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,10 +34,10 @@ public class InventoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteInventory(
+    public ResponseEntity<ApiResponse2> deleteInventory(
             @PathVariable UUID id
     ) {
-        ApiResponse apiResponse = new ApiResponse();
+        ApiResponse2 apiResponse = new ApiResponse2();
         apiResponse.setMessage("Inventory deleted Successfully!");
         return ResponseEntity.ok(apiResponse);
     }
