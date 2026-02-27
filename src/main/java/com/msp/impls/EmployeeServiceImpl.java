@@ -11,6 +11,10 @@ import com.msp.repositories.StoreRepository;
 import com.msp.repositories.UserRepository;
 import com.msp.services.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -95,25 +99,31 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<UserDto> findStoreEmployees(UUID storeId, EUserRole role) throws Exception {
+    public Page<UserDto> findStoreEmployees(UUID storeId, EUserRole role,int page , int size) throws Exception {
         Store store = storeRepository.findById(storeId).orElseThrow(
                 ()-> new Exception("Store Not Found!")
         );
-        return userRepository.findByStore(store).stream()
+        Pageable pageable = PageRequest.of(page,size);
+        Page<User> userPage = userRepository.findByStore(store, pageable);
+        List<UserDto> filtered = userPage.stream()
                 .filter(user -> role==null || user.getRole()==role)
                 .map(UserMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
+
+        return new PageImpl<>(filtered,pageable,userPage.getTotalElements());
     }
 
     @Override
-    public List<UserDto> findBranchEmployees(UUID branchId, EUserRole role) throws Exception {
+    public Page<UserDto> findBranchEmployees(UUID branchId, EUserRole role,int page, int size) throws Exception {
         Branch branch = branchRepository.findById(branchId).orElseThrow(
                 () -> new Exception("Branch Not Found!")
         );
-        List<UserDto> employee = userRepository.findByBranchId(branchId)
+        Pageable pageable = PageRequest.of(page,size);
+        Page<User> userPage = userRepository.findByBranchId(branchId,pageable);
+        List<UserDto> employee = userPage
                 .stream().filter(user -> role==null || user.getRole()==role)
                 .map(UserMapper::toDTO)
                 .collect(Collectors.toList());
-        return employee;
+        return new PageImpl<>(employee,pageable,userPage.getTotalElements());
     }
 }

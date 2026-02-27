@@ -14,6 +14,10 @@ import com.msp.services.OrderService;
 import com.msp.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -88,12 +92,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDto> getOrdersByBranch(UUID branchId,
+    public Page<OrderDto> getOrdersByBranch(UUID branchId,
                                             UUID customerId,
                                             UUID cashierId,
                                             EPaymentType paymentType,
-                                            EOrderStatus orderStatus) throws Exception {
-        return orderRepository.findByBranchId(branchId).stream()
+                                            EOrderStatus orderStatus,
+                                            int page,
+                                            int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        Page<Order> orderPage = orderRepository.findByBranchId(branchId,pageable);
+        List<OrderDto> orders = orderPage.stream()
                 .filter(order -> customerId == null ||
                         (order.getCustomer() != null &&
                                 order.getCustomer().getId().equals(customerId)))
@@ -101,16 +109,16 @@ public class OrderServiceImpl implements OrderService {
                         order.getCashier()!=null &&
                                 order.getCashier().getId().equals(customerId))
                 .filter(order -> paymentType==null ||
-                order.getPaymentType()==paymentType)
-                .map(OrderMapper::toDto).collect(Collectors.toList());
+                        order.getPaymentType()==paymentType)
+                .map(OrderMapper::toDto).toList();
+        return new PageImpl<>(orders,pageable,orderPage.getTotalElements());
     }
 
     @Override
-    public List<OrderDto> getOrderByCashier(UUID cashierId) {
-        return orderRepository.findByCashier_Id(cashierId)
-                .stream()
-                .map(OrderMapper::toDto)
-                .toList();
+    public Page<OrderDto> getOrderByCashier(UUID cashierId, int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        return orderRepository.findByCashier_Id(cashierId,pageable)
+                .map(OrderMapper::toDto);
     }
 
     @Override
@@ -122,30 +130,33 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<OrderDto> getTodayOrderByBranch(UUID branchId) throws Exception {
+    public Page<OrderDto> getTodayOrderByBranch(UUID branchId, int page, int size) throws Exception {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay();
+        Pageable pageable = PageRequest.of(page,size);
         return orderRepository.findByBranchIdAndCreatedAtBetween(
-                branchId, start, end
-        ).stream().map(
+                branchId, start, end,pageable
+        ).map(
                 OrderMapper::toDto
-        ).collect(Collectors.toList());
+        );
     }
 
     @Override
-    public List<OrderDto> getOrderByCustomerId(UUID customerId) throws Exception {
-        return orderRepository.findByCustomerId(customerId)
-                .stream().map(
+    public Page<OrderDto> getOrderByCustomerId(UUID customerId, int page, int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return orderRepository.findByCustomerId(customerId,pageable)
+                .map(
                         OrderMapper::toDto
-                ).collect(Collectors.toList());
+                );
     }
 
     @Override
-    public List<OrderDto> getTop5RecentOrdersByBranchId(UUID branchId) throws Exception {
-        return orderRepository.findTop5ByBranchIdOrderByCreatedAtDesc(branchId)
-                .stream().map(
+    public Page<OrderDto> getTop5RecentOrdersByBranchId(UUID branchId,int page ,int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return orderRepository.findTop5ByBranchIdOrderByCreatedAtDesc(branchId,pageable)
+                .map(
                         OrderMapper::toDto
-                ).collect(Collectors.toList());
+                );
     }
 }

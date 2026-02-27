@@ -11,6 +11,9 @@ import com.msp.repositories.UserRepository;
 import com.msp.services.BranchService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -61,10 +64,9 @@ public class BranchServiceImpl implements BranchService {
     }
 
     @Override
-    public List<BranchDto> getAllBranchesByStoreId(UUID storeId) {
-        List<Branch> branches = branchRepo.findByStoreId(storeId);
-        return branches.stream().map(BranchMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<BranchDto> getAllBranchesByStoreId(UUID storeId, int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        return branchRepo.findByStoreId(storeId,pageable).map(BranchMapper::toDto);
     }
 
     @Override

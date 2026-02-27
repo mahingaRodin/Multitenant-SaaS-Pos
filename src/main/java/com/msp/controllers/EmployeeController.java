@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -310,7 +311,7 @@ public class EmployeeController {
             )
     })
     @GetMapping("/store/{id}")
-    public ResponseEntity<List<UserDto>> storeEmployee(
+    public ResponseEntity<Page<UserDto>> storeEmployee(
             @Parameter(
                     name = "id",
                     description = "UUID of the store",
@@ -325,9 +326,11 @@ public class EmployeeController {
                     example = "CASHIER",
                     schema = @Schema(implementation = EUserRole.class)
             )
-            @RequestParam(required = false) EUserRole userRole
+            @RequestParam(required = false) EUserRole userRole,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
     ) throws Exception {
-        List<UserDto> employee = employeeService.findStoreEmployees(id, userRole);
+        Page<UserDto> employee = employeeService.findStoreEmployees(id, userRole,page,size);
         return ResponseEntity.ok(employee);
     }
 
@@ -366,7 +369,7 @@ public class EmployeeController {
             )
     })
     @GetMapping("/branch/{id}")
-    public ResponseEntity<List<UserDto>> branchEmployee(
+    public ResponseEntity<Page<UserDto>> branchEmployee(
             @Parameter(
                     name = "id",
                     description = "UUID of the branch",
@@ -381,9 +384,11 @@ public class EmployeeController {
                     example = "CASHIER",
                     schema = @Schema(implementation = EUserRole.class)
             )
-            @RequestParam(required = false) EUserRole userRole
+            @RequestParam(required = false) EUserRole userRole,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        List<UserDto> employee = employeeService.findBranchEmployees(id, userRole);
+        Page<UserDto> employee = employeeService.findBranchEmployees(id, userRole,page,size);
         return ResponseEntity.ok(employee);
     }
 }

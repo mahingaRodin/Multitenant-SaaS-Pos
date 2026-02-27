@@ -12,6 +12,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -359,5 +363,74 @@ public class ShiftReportController {
         return ResponseEntity.ok(
                 shiftReportService.getShiftReportById(id)
         );
+    }
+
+
+    @Operation(
+            summary = "Get all shift reports with pagination",
+            description = "Retrieves a paginated list of all shift reports in the system. Requires ADMIN or MANAGER role."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Shift reports retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = Page.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Invalid or missing JWT token",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - ADMIN or MANAGER role required",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal server error",
+                    content = @Content
+            )
+    })
+    @GetMapping
+    public ResponseEntity<Page<ShiftReportDto>> getAllShiftReports(
+            @Parameter(
+                    name = "page",
+                    description = "Page number (0-based)",
+                    example = "0"
+            )
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(
+                    name = "size",
+                    description = "Number of items per page",
+                    example = "10"
+            )
+            @RequestParam(defaultValue = "10") int size,
+
+            @Parameter(
+                    name = "sortBy",
+                    description = "Field to sort by",
+                    example = "shiftStart",
+                    schema = @Schema(allowableValues = {"id", "shiftStart", "shiftEnd", "totalSales", "totalRefunds"})
+            )
+            @RequestParam(defaultValue = "shiftStart") String sortBy,
+
+            @Parameter(
+                    name = "direction",
+                    description = "Sort direction",
+                    example = "DESC",
+                    schema = @Schema(allowableValues = {"ASC", "DESC"})
+            )
+            @RequestParam(defaultValue = "DESC") String direction
+    ) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<ShiftReportDto> shiftReports = shiftReportService.getAllShiftReports(pageable);
+        return ResponseEntity.ok(shiftReports);
     }
 }

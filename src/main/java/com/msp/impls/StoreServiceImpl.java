@@ -11,6 +11,8 @@ import com.msp.repositories.StoreRepository;
 import com.msp.services.StoreService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,9 +41,9 @@ public class StoreServiceImpl implements StoreService {
     }
 
     @Override
-    public List<StoreDto> getAllStores() {
-        List<Store> dtos = storeRepo.findAll();
-        return dtos.stream().map(StoreMapper::toDto).collect(Collectors.toList());
+    public Page<StoreDto> getAllStores(Pageable pageable) {
+        Page<Store> dtos = storeRepo.findAll(pageable);
+        return dtos.map(StoreMapper::toDto);
     }
 
     @Override

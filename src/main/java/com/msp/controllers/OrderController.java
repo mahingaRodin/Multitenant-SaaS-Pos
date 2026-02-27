@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -162,7 +163,7 @@ public class OrderController {
             )
     })
     @GetMapping("/branch/{branchId}")
-    public ResponseEntity<List<OrderDto>> getOrdersByBranchId(
+    public ResponseEntity<Page<OrderDto>> getOrdersByBranchId(
             @Parameter(
                     name = "branchId",
                     description = "UUID of the branch",
@@ -199,9 +200,11 @@ public class OrderController {
                     example = "COMPLETED",
                     schema = @Schema(implementation = EOrderStatus.class)
             )
-            @RequestParam(required = false) EOrderStatus orderStatus
+            @RequestParam(required = false) EOrderStatus orderStatus,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        return ResponseEntity.ok(orderService.getOrdersByBranch(branchId, customerId, cashierId, paymentType, orderStatus));
+        return ResponseEntity.ok(orderService.getOrdersByBranch(branchId, customerId, cashierId, paymentType, orderStatus,page,size));
     }
 
     @Operation(
@@ -239,16 +242,18 @@ public class OrderController {
             )
     })
     @GetMapping("/cashier/{id}")
-    public ResponseEntity<List<OrderDto>> getOrderByCashier(
+    public ResponseEntity<Page<OrderDto>> getOrderByCashier(
             @Parameter(
                     name = "id",
                     description = "UUID of the cashier",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        return ResponseEntity.ok(orderService.getOrderByCashier(id));
+        return ResponseEntity.ok(orderService.getOrderByCashier(id,page,size));
     }
 
     @Operation(
@@ -286,16 +291,18 @@ public class OrderController {
             )
     })
     @GetMapping("/today/branch/{id}")
-    public ResponseEntity<List<OrderDto>> getTodayOrder(
+    public ResponseEntity<Page<OrderDto>> getTodayOrder(
             @Parameter(
                     name = "id",
                     description = "UUID of the branch",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10") int size
     ) throws Exception {
-        return ResponseEntity.ok(orderService.getTodayOrderByBranch(id));
+        return ResponseEntity.ok(orderService.getTodayOrderByBranch(id,page,size));
     }
 
     @Operation(
@@ -333,16 +340,18 @@ public class OrderController {
             )
     })
     @GetMapping("/customer/{id}")
-    public ResponseEntity<List<OrderDto>> getCustomerOrder(
+    public ResponseEntity<Page<OrderDto>> getCustomerOrder(
             @Parameter(
                     name = "id",
                     description = "UUID of the customer",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID id
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        return ResponseEntity.ok(orderService.getOrderByCustomerId(id));
+        return ResponseEntity.ok(orderService.getOrderByCustomerId(id,page,size));
     }
 
     @Operation(
@@ -380,15 +389,17 @@ public class OrderController {
             )
     })
     @GetMapping("/recent/branch/{branchId}")
-    public ResponseEntity<List<OrderDto>> getRecentOrder(
+    public ResponseEntity<Page<OrderDto>> getRecentOrder(
             @Parameter(
                     name = "branchId",
                     description = "UUID of the branch",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID branchId
+            @PathVariable UUID branchId,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        return ResponseEntity.ok(orderService.getTop5RecentOrdersByBranchId(branchId));
+        return ResponseEntity.ok(orderService.getTop5RecentOrdersByBranchId(branchId,page,size));
     }
 }

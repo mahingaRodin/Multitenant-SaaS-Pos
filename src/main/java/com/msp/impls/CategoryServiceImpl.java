@@ -11,6 +11,9 @@ import com.msp.repositories.StoreRepository;
 import com.msp.services.CategoryService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,12 +43,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public List<CategoryDto> getCategoriesByStore(UUID storeId) {
-        List<Category> categories = catRepo.findByStoreId(storeId);
-        return categories.stream()
+    public Page<CategoryDto> getCategoriesByStore(UUID storeId,int page,int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        return catRepo.findByStoreId(storeId,pageable)
                 .map(
                         CategoryMapper::toDto
-                ).collect(Collectors.toList());
+                );
     }
 
     @Override

@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -292,17 +293,19 @@ public class InventoryController {
             )
     })
     @GetMapping("/branch/{branchId}")
-    public ResponseEntity<List<InventoryDto>> getInventoryBranch(
+    public ResponseEntity<Page<InventoryDto>> getInventoryBranch(
             @Parameter(
                     name = "branchId",
                     description = "UUID of the branch to retrieve inventory for",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID branchId
+            @PathVariable UUID branchId,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
         return ResponseEntity.ok(
-                inventoryService.getAlInventoryByBranchId(branchId)
+                inventoryService.getAllInventoryByBranchId(branchId,page,size)
         );
     }
 }

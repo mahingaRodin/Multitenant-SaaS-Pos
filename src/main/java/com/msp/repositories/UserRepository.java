@@ -11,6 +11,6 @@ import java.util.UUID;
 
 public interface UserRepository extends JpaRepository<User, UUID> {
     User findByEmail(String email);
-    List<User> findByStore(Store store);
-    List<User> findByBranchId(UUID branchId);
+    Page<User> findByStore(Store store, Pageable pageable);
+    Page<User> findByBranchId(UUID branchId,Pageable pageable);
 }

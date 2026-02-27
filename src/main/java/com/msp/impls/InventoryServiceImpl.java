@@ -10,6 +10,9 @@ import com.msp.repositories.InventoryRepository;
 import com.msp.repositories.ProductRepository;
 import com.msp.services.InventoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -69,10 +72,11 @@ public class InventoryServiceImpl  implements InventoryService {
     }
 
     @Override
-    public List<InventoryDto> getAlInventoryByBranchId(UUID branchId) {
-        List<Inventory> inventories = inventoryRepository.findByBranchId(branchId);
-        return inventories.stream().map(
+    public Page<InventoryDto> getAllInventoryByBranchId(UUID branchId,int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        Page<Inventory> inventories = inventoryRepository.findByBranchId(branchId,pageable);
+        return inventories.map(
                 InventoryMapper::toDto
-        ).collect(Collectors.toList());
+        );
     }
 }

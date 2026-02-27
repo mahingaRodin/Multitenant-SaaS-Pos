@@ -7,6 +7,9 @@ import com.msp.payloads.dtos.CustomerUpdateDto;
 import com.msp.repositories.CustomerRepository;
 import com.msp.services.CustomerService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -60,20 +63,17 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public List<CustomerDto> getAllCustomers() throws Exception {
-        return customerRepository.findAll()
-                .stream()
-                .map(CustomerMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<CustomerDto> getAllCustomers(int page, int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return customerRepository.findAll(pageable)
+                .map(CustomerMapper::toDto);
     }
 
     @Override
-    public List<CustomerDto> searchCustomers(String keyword) throws Exception {
+    public Page<CustomerDto> searchCustomers(String keyword, int page, int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
         return customerRepository.findByFirstNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
-                keyword, keyword
-        )
-                .stream()
-                .map(CustomerMapper::toDto)
-                .collect(Collectors.toList());
+                keyword, keyword,pageable
+        ).map(CustomerMapper::toDto);
     }
 }

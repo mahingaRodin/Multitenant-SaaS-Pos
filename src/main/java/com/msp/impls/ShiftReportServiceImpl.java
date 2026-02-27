@@ -11,6 +11,9 @@ import com.msp.repositories.UserRepository;
 import com.msp.services.ShiftService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -92,11 +95,10 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
-    public List<ShiftReportDto> getAllShiftReports() {
-        List<ShiftReport> reports = shiftReportRepository.findAll();
-        return reports.stream().map(
+    public Page<ShiftReportDto> getAllShiftReports(Pageable pageable) {
+        return shiftReportRepository.findAll(pageable).map(
                 ShiftReportMapper::toDto
-        ).collect(Collectors.toList());
+        );
     }
 
     @Override

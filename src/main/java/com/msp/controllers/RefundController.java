@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -116,8 +117,8 @@ public class RefundController {
             )
     })
     @GetMapping
-    public ResponseEntity<List<RefundDto>> getAllRefunds() throws Exception {
-        List<RefundDto> refunds = refundService.getAllRefunds();
+    public ResponseEntity<Page<RefundDto>> getAllRefunds(int page, int size) throws Exception {
+        Page<RefundDto> refunds = refundService.getAllRefunds(page, size);
         return ResponseEntity.ok(refunds);
     }
 
@@ -156,16 +157,18 @@ public class RefundController {
             )
     })
     @GetMapping("/cashier/{cashierId}")
-    public ResponseEntity<List<RefundDto>> getRefundByCashierId(
+    public ResponseEntity<Page<RefundDto>> getRefundByCashierId(
             @Parameter(
                     name = "cashierId",
                     description = "UUID of the cashier who processed the refunds",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID cashierId
-    ) throws Exception {
-        List<RefundDto> refunds = refundService.getRefundByCashier(cashierId);
+            @PathVariable UUID cashierId,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
+            ) throws Exception {
+        Page<RefundDto> refunds = refundService.getRefundByCashier(cashierId,page,size);
         return ResponseEntity.ok(refunds);
     }
 
@@ -204,16 +207,18 @@ public class RefundController {
             )
     })
     @GetMapping("/branch/{branchId}")
-    public ResponseEntity<List<RefundDto>> getRefundByBranchId(
+    public ResponseEntity<Page<RefundDto>> getRefundByBranchId(
             @Parameter(
                     name = "branchId",
                     description = "UUID of the branch where refunds were processed",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID branchId
+            @PathVariable UUID branchId,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        List<RefundDto> refunds = refundService.getRefundByBranch(branchId);
+        Page<RefundDto> refunds = refundService.getRefundByBranch(branchId,page,size);
         return ResponseEntity.ok(refunds);
     }
 
@@ -252,16 +257,18 @@ public class RefundController {
             )
     })
     @GetMapping("/shift/{shiftId}")
-    public ResponseEntity<List<RefundDto>> getRefundByShiftId(
+    public ResponseEntity<Page<RefundDto>> getRefundByShiftId(
             @Parameter(
                     name = "shiftId",
                     description = "UUID of the shift report",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID shiftId
+            @PathVariable UUID shiftId,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        List<RefundDto> refunds = refundService.getRefundByShiftReport(shiftId);
+        Page<RefundDto> refunds = refundService.getRefundByShiftReport(shiftId,page,size);
         return ResponseEntity.ok(refunds);
     }
 
@@ -300,7 +307,7 @@ public class RefundController {
             )
     })
     @GetMapping("/cashier/{cashierId}/range")
-    public ResponseEntity<List<RefundDto>> getRefundByCashierAndDateRange(
+    public ResponseEntity<Page<RefundDto>> getRefundByCashierAndDateRange(
             @Parameter(
                     name = "cashierId",
                     description = "UUID of the cashier",
@@ -323,12 +330,16 @@ public class RefundController {
                     required = true,
                     example = "2024-01-31T23:59:59.999Z"
             )
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        List<RefundDto> refund = refundService.getRefundByCashierAndDateRange(
+        Page<RefundDto> refund = refundService.getRefundByCashierAndDateRange(
                 cashierId,
                 startDate,
-                endDate
+                endDate,
+                page,
+                size
         );
         return ResponseEntity.ok(refund);
     }

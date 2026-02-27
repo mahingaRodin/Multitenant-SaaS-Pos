@@ -11,6 +11,9 @@ import com.msp.repositories.ProductRepository;
 import com.msp.repositories.StoreRepository;
 import com.msp.services.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -72,18 +75,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<ProductDto> getProductsByStoreId(UUID storeId) {
-        List<Product> products = productRepo.findByStoreId(storeId);
-        return products.stream()
-                .map(ProductMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<ProductDto> getProductsByStoreId(UUID storeId,int page, int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        return productRepo.findByStoreId(storeId,pageable).map(ProductMapper::toDto);
     }
 
     @Override
-    public List<ProductDto> searchByKeyword(UUID storeId, String keyword) {
-        List<Product> products = productRepo.searchByKeyword(storeId, keyword);
-        return products.stream()
-                .map(ProductMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<ProductDto> searchByKeyword(UUID storeId, String keyword, int page ,int size) {
+        Pageable pageable = PageRequest.of(page,size);
+        return productRepo.searchByKeyword(storeId, keyword,pageable).map(ProductMapper::toDto);
     }
 }

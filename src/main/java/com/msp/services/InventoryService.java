@@ -1,6 +1,7 @@
 package com.msp.services;
 
 import com.msp.payloads.dtos.InventoryDto;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,5 +12,5 @@ public interface InventoryService {
     void deleteInventory(UUID id) throws Exception;
     InventoryDto getInventoryById(UUID id) throws Exception;
     InventoryDto getInventoryByProductIdAndBranchId(UUID productId, UUID branchId);
-    List<InventoryDto> getAlInventoryByBranchId(UUID branchId);
+    Page<InventoryDto> getAllInventoryByBranchId(UUID branchId,int page,int size);
 }

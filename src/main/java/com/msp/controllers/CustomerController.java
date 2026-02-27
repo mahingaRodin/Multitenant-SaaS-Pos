@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -277,8 +278,11 @@ public class CustomerController {
             )
     })
     @GetMapping
-    public ResponseEntity<List<CustomerDto>> getAllCustomers() throws Exception {
-        return ResponseEntity.ok(customerService.getAllCustomers());
+    public ResponseEntity<Page<CustomerDto>> getAllCustomers(
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10") int size
+    ) throws Exception {
+        return ResponseEntity.ok(customerService.getAllCustomers(page,size));
     }
 
     @Operation(
@@ -311,7 +315,7 @@ public class CustomerController {
             )
     })
     @GetMapping("/search")
-    public ResponseEntity<List<CustomerDto>> search(
+    public ResponseEntity<Page<CustomerDto>> search(
             @Parameter(
                     name = "q",
                     description = "Search query string (searches across name, email, phone, etc.)",
@@ -319,8 +323,10 @@ public class CustomerController {
                     example = "john",
                     schema = @Schema(type = "string", minLength = 2)
             )
-            @RequestParam String q
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
-        return ResponseEntity.ok(customerService.searchCustomers(q));
+        return ResponseEntity.ok(customerService.searchCustomers(q,page,size));
     }
 }

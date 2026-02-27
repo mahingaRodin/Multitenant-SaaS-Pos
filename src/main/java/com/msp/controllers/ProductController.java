@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -130,16 +131,18 @@ public class ProductController {
             )
     })
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<ProductDto>> getAllProducts(
+    public ResponseEntity<Page<ProductDto>> getAllProducts(
             @Parameter(
                     name = "storeId",
                     description = "UUID of the store to retrieve products for",
                     required = true,
                     example = "123e4567-e89b-12d3-a456-426614174000"
             )
-            @PathVariable UUID storeId
+            @PathVariable UUID storeId,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) {
-        return ResponseEntity.ok(productService.getProductsByStoreId(storeId));
+        return ResponseEntity.ok(productService.getProductsByStoreId(storeId,page,size));
     }
 
     @Operation(
@@ -177,7 +180,7 @@ public class ProductController {
             )
     })
     @GetMapping("/store/{storeId}/search")
-    public ResponseEntity<List<ProductDto>> searchByKeyword(
+    public ResponseEntity<Page<ProductDto>> searchByKeyword(
             @Parameter(
                     name = "storeId",
                     description = "UUID of the store to search in",
@@ -201,12 +204,16 @@ public class ProductController {
                     example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                     schema = @Schema(type = "string", format = "Bearer [token]")
             )
-            @RequestHeader("Authorization") String token
+            @RequestHeader("Authorization") String token,
+            @RequestParam(defaultValue = "0")int page,
+            @RequestParam(defaultValue = "10")int size
     ) throws Exception {
         return ResponseEntity.ok(
                 productService.searchByKeyword(
                         storeId,
-                        keyword
+                        keyword,
+                        page,
+                        size
                 )
         );
     }

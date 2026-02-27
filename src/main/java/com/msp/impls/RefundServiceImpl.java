@@ -8,6 +8,9 @@ import com.msp.repositories.RefundRepository;
 import com.msp.services.RefundService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -42,45 +45,39 @@ public class RefundServiceImpl implements RefundService {
     }
 
     @Override
-    public List<RefundDto> getAllRefunds() throws Exception {
-        return refundRepository.findAll()
-                .stream()
-                .map(RefundMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<RefundDto> getAllRefunds(int page,int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return refundRepository.findAll(pageable)
+                .map(RefundMapper::toDto);
     }
 
     @Override
-    public List<RefundDto> getRefundByCashier(UUID cashierId) throws Exception {
-        return refundRepository.findByCashierId(cashierId)
-                .stream()
-                .map(RefundMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<RefundDto> getRefundByCashier(UUID cashierId,int page,int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return refundRepository.findByCashierId(cashierId,pageable)
+                .map(RefundMapper::toDto);
     }
 
     @Override
-    public List<RefundDto> getRefundByShiftReport(UUID shiftReportId) throws Exception {
-        return refundRepository.findByShiftReportId(shiftReportId)
-                .stream()
-                .map(RefundMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<RefundDto> getRefundByShiftReport(UUID shiftReportId,int page,int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return refundRepository.findByShiftReportId(shiftReportId,pageable)
+                .map(RefundMapper::toDto);
     }
 
     @Override
-    public List<RefundDto> getRefundByCashierAndDateRange(UUID cashierId, LocalDateTime startDate, LocalDateTime endDate) throws Exception {
+    public Page<RefundDto> getRefundByCashierAndDateRange(UUID cashierId, LocalDateTime startDate, LocalDateTime endDate, int page, int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
         return refundRepository.findByCashierIdAndCreatedAtBetween(
-                cashierId, startDate, endDate
-        )
-                .stream()
-                .map(RefundMapper::toDto)
-                .collect(Collectors.toList());
+                cashierId, startDate, endDate,pageable
+        ).map(RefundMapper::toDto);
     }
 
     @Override
-    public List<RefundDto> getRefundByBranch(UUID branchId) throws Exception {
-        return refundRepository.findByBranchId(branchId)
-                .stream()
-                .map(RefundMapper::toDto)
-                .collect(Collectors.toList());
+    public Page<RefundDto> getRefundByBranch(UUID branchId,int page,int size) throws Exception {
+        Pageable pageable = PageRequest.of(page,size);
+        return refundRepository.findByBranchId(branchId,pageable)
+                .map(RefundMapper::toDto);
     }
 
     @Override

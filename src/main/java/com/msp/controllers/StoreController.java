@@ -18,6 +18,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -175,19 +179,42 @@ public class StoreController {
                     responseCode = "500",
                     description = "Internal server error",
                     content = @Content
-            )
-    })
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - ADMIN or MANAGER role required",
+                    content = @Content
+            )}
+    )
     @GetMapping
-    public ResponseEntity<List<StoreDto>> getAllStores(
+    public ResponseEntity<Page<StoreDto>> getAllStores(
             @Parameter(
-                    description = "Bearer JWT token for authentication",
-                    required = true,
-                    example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                    schema = @Schema(type = "string", format = "Bearer [token]")
+                    name = "page",
+                    description = "Page number (0-based)",
+                    example = "0"
             )
-            @RequestHeader("Authorization") String token
-    ) throws Exception {
-        return ResponseEntity.ok(storeService.getAllStores());
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(
+                    name = "size",
+                    description = "Number of items per page",
+                    example = "10"
+            )
+            @RequestParam(defaultValue = "10") int size,
+
+            @Parameter(
+                    name = "direction",
+                    description = "Sort direction",
+                    example = "DESC",
+                    schema = @Schema(allowableValues = {"ASC", "DESC"})
+            )
+            @RequestParam(defaultValue = "DESC") String direction
+    ) {
+        Sort sort = Sort.by(Sort.Direction.fromString(direction));
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<StoreDto> shiftReports = storeService.getAllStores(pageable);
+        return ResponseEntity.ok(shiftReports);
     }
 
     @Operation(
