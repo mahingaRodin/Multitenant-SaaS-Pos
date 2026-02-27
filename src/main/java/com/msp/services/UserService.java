@@ -1,6 +1,8 @@
 package com.msp.services;
 
 import com.msp.models.User;
+import com.msp.payloads.dtos.UserDto;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.UUID;
@@ -10,5 +12,5 @@ public interface UserService {
     User getCurrentUser();
     User getUserByEmail(String email);
     User getUserById(UUID id);
-    List<User> getAllUsers();
+    Page<UserDto> getAllUsers(int page, int size, String sortBy);
 }

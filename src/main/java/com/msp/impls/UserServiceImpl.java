@@ -2,11 +2,17 @@ package com.msp.impls;
 
 import com.msp.configs.JwtProvider;
 import com.msp.exceptions.UserException;
+import com.msp.mappers.UserMapper;
 import com.msp.models.User;
+import com.msp.payloads.dtos.UserDto;
 import com.msp.repositories.UserRepository;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -55,7 +61,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<User> getAllUsers() {
-        return userRepo.findAll();
+    public Page<UserDto> getAllUsers(int page, int size, String sortBy) {
+        Pageable pageable = PageRequest.of(page,size, Sort.by(sortBy));
+        return userRepo.findAll(pageable).map(UserMapper::toDTO);
     }
 }
