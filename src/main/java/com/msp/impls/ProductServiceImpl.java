@@ -11,6 +11,11 @@ import com.msp.repositories.ProductRepository;
 import com.msp.repositories.StoreRepository;
 import com.msp.services.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "products")
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepo;
@@ -30,6 +36,15 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository catRepo;
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "products-by-store", allEntries = true),
+                    @CacheEvict(value = "products-search", allEntries = true)
+            }
+    )
     public ProductDto createProduct(ProductDto productDto, User user) throws Exception {
         Store store = storeRepo.findById(
                 productDto.getStoreId()
@@ -45,6 +60,15 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "products-by-store", allEntries = true),
+                    @CacheEvict(value = "products-search", allEntries = true)
+            }
+    )
     public ProductDto updateProduct(UUID id, ProductDto productDto, User user) throws Exception {
         Product product = productRepo.findById(id).orElseThrow(
                 () -> new Exception("Product Not Found!")
@@ -67,22 +91,39 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(key = "#id"),
+                    @CacheEvict(value = "products-by-store", allEntries = true),
+                    @CacheEvict(value = "products-search", allEntries = true)
+            }
+    )
     public void deleteProduct(UUID id, User user) throws Exception {
-    Product product = productRepo.findById(id).orElseThrow(
-            ()-> new Exception("Product Not Found")
-    );
-    productRepo.delete(product);
+        Product product = productRepo.findById(id).orElseThrow(
+                ()-> new Exception("Product Not Found")
+        );
+        productRepo.delete(product);
     }
 
     @Override
-    public Page<ProductDto> getProductsByStoreId(UUID storeId,int page, int size) {
-        Pageable pageable = PageRequest.of(page,size);
-        return productRepo.findByStoreId(storeId,pageable).map(ProductMapper::toDto);
+    @Cacheable(value = "products-by-store", key = "#storeId + '-' + #page + '-' + #size")
+    public Page<ProductDto> getProductsByStoreId(UUID storeId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepo.findByStoreId(storeId, pageable).map(ProductMapper::toDto);
     }
 
     @Override
-    public Page<ProductDto> searchByKeyword(UUID storeId, String keyword, int page ,int size) {
-        Pageable pageable = PageRequest.of(page,size);
-        return productRepo.searchByKeyword(storeId, keyword,pageable).map(ProductMapper::toDto);
+    @Cacheable(value = "products-search", key = "#storeId + '-' + #keyword + '-' + #page + '-' + #size")
+    public Page<ProductDto> searchByKeyword(UUID storeId, String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepo.searchByKeyword(storeId, keyword, pageable).map(ProductMapper::toDto);
+    }
+
+    @Cacheable(key = "#id")
+    public ProductDto getProductById(UUID id) throws Exception {
+        Product product = productRepo.findById(id).orElseThrow(
+                () -> new Exception("Product Not Found")
+        );
+        return ProductMapper.toDto(product);
     }
 }

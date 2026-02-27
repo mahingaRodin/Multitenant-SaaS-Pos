@@ -11,6 +11,11 @@ import com.msp.repositories.StoreRepository;
 import com.msp.repositories.UserRepository;
 import com.msp.services.EmployeeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -24,6 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "employees")
 public class EmployeeServiceImpl implements EmployeeService {
     private final UserRepository userRepository;
     private final StoreRepository storeRepository;
@@ -31,6 +37,15 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "employees-store", allEntries = true),
+                    @CacheEvict(value = "employees-branch", allEntries = true)
+            }
+    )
     public UserDto createStoreEmployee(UserDto employee, UUID storeId) throws Exception {
         Store store = storeRepository.findById(storeId).orElseThrow(
                 () -> new Exception("Store Not Found")
@@ -43,28 +58,35 @@ public class EmployeeServiceImpl implements EmployeeService {
             branch = branchRepository.findById(employee.getBranchId()).orElseThrow(
                     () -> new Exception("Branch Not Found")
             );}
-            User user = UserMapper.toEntity(employee);
-            user.setStore(store);
-            user.setBranch(branch);
-            user.setPassword(passwordEncoder.encode(employee.getPassword()));
+        User user = UserMapper.toEntity(employee);
+        user.setStore(store);
+        user.setBranch(branch);
+        user.setPassword(passwordEncoder.encode(employee.getPassword()));
 
-            User savedEmployee = userRepository.save(user);
-            if(employee.getRole()==EUserRole.ROLE_BRANCH_MANAGER && branch!=null) {
-                branch.setManager(savedEmployee);
-                branchRepository.save(branch);
-            }
+        User savedEmployee = userRepository.save(user);
+        if(employee.getRole()==EUserRole.ROLE_BRANCH_MANAGER && branch!=null) {
+            branch.setManager(savedEmployee);
+            branchRepository.save(branch);
+        }
         return UserMapper.toDTO(savedEmployee);
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "employees-store", allEntries = true),
+                    @CacheEvict(value = "employees-branch", allEntries = true)
+            }
+    )
     public UserDto createBranchEmployee(UserDto employee, UUID branchId) throws Exception {
         Branch branch = branchRepository.findById(branchId).orElseThrow(
                 () -> new Exception("Branch Not Found!")
         );
-        //admin
         if(employee.getRole() == EUserRole.ROLE_BRANCH_CASHIER
-        || employee.getRole() == EUserRole.ROLE_BRANCH_MANAGER
-        ) {
+                || employee.getRole() == EUserRole.ROLE_BRANCH_MANAGER) {
             User user = UserMapper.toEntity(employee);
             user.setBranch(branch);
             user.setPassword(passwordEncoder.encode(employee.getPassword()));
@@ -74,6 +96,15 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "employees-store", allEntries = true),
+                    @CacheEvict(value = "employees-branch", allEntries = true)
+            }
+    )
     public User updateEmployee(UUID employeeId, UserDto employeeDetails) throws Exception {
         User existingEmployee = userRepository.findById(employeeId).orElseThrow(
                 () -> new Exception("Employee with given id doesn't exist!")
@@ -91,39 +122,48 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(key = "#employeeId"),
+                    @CacheEvict(value = "employees-store", allEntries = true),
+                    @CacheEvict(value = "employees-branch", allEntries = true)
+            }
+    )
     public void deleteEmployee(UUID employeeId) throws Exception {
-    User employee = userRepository.findById(employeeId).orElseThrow(
-            () -> new Exception("Employee Not Found!")
-    );
-    userRepository.delete(employee);
+        User employee = userRepository.findById(employeeId).orElseThrow(
+                () -> new Exception("Employee Not Found!")
+        );
+        userRepository.delete(employee);
     }
 
     @Override
-    public Page<UserDto> findStoreEmployees(UUID storeId, EUserRole role,int page , int size) throws Exception {
+    @Cacheable(value = "employees-store", key = "#storeId + '-' + #role + '-' + #page + '-' + #size")
+    public Page<UserDto> findStoreEmployees(UUID storeId, EUserRole role, int page, int size) throws Exception {
         Store store = storeRepository.findById(storeId).orElseThrow(
                 ()-> new Exception("Store Not Found!")
         );
-        Pageable pageable = PageRequest.of(page,size);
+        Pageable pageable = PageRequest.of(page, size);
         Page<User> userPage = userRepository.findByStore(store, pageable);
         List<UserDto> filtered = userPage.stream()
-                .filter(user -> role==null || user.getRole()==role)
+                .filter(user -> role == null || user.getRole() == role)
                 .map(UserMapper::toDTO)
                 .toList();
 
-        return new PageImpl<>(filtered,pageable,userPage.getTotalElements());
+        return new PageImpl<>(filtered, pageable, userPage.getTotalElements());
     }
 
     @Override
-    public Page<UserDto> findBranchEmployees(UUID branchId, EUserRole role,int page, int size) throws Exception {
+    @Cacheable(value = "employees-branch", key = "#branchId + '-' + #role + '-' + #page + '-' + #size")
+    public Page<UserDto> findBranchEmployees(UUID branchId, EUserRole role, int page, int size) throws Exception {
         Branch branch = branchRepository.findById(branchId).orElseThrow(
                 () -> new Exception("Branch Not Found!")
         );
-        Pageable pageable = PageRequest.of(page,size);
-        Page<User> userPage = userRepository.findByBranchId(branchId,pageable);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<User> userPage = userRepository.findByBranchId(branchId, pageable);
         List<UserDto> employee = userPage
-                .stream().filter(user -> role==null || user.getRole()==role)
+                .stream().filter(user -> role == null || user.getRole() == role)
                 .map(UserMapper::toDTO)
                 .collect(Collectors.toList());
-        return new PageImpl<>(employee,pageable,userPage.getTotalElements());
+        return new PageImpl<>(employee, pageable, userPage.getTotalElements());
     }
 }

@@ -7,10 +7,14 @@ import com.msp.models.User;
 import com.msp.payloads.dtos.BranchDto;
 import com.msp.repositories.BranchRepository;
 import com.msp.repositories.StoreRepository;
-import com.msp.repositories.UserRepository;
 import com.msp.services.BranchService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,21 +27,40 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "branches")
 public class BranchServiceImpl implements BranchService {
     private final BranchRepository branchRepo;
     private final StoreRepository storeRepo;
     private final UserService userService;
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "branches-by-store", allEntries = true),
+                    @CacheEvict(value = "branches-page", allEntries = true)
+            }
+    )
     public BranchDto createBranch(BranchDto branchDto) {
         User currentUser = userService.getCurrentUser();
         Store store = storeRepo.findByStoreAdminId(currentUser.getId());
-        Branch branch = BranchMapper.toEntity(branchDto,store);
+        Branch branch = BranchMapper.toEntity(branchDto, store);
         Branch savedBranch = branchRepo.save(branch);
         return BranchMapper.toDto(savedBranch);
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "branches-by-store", allEntries = true),
+                    @CacheEvict(value = "branches-page", allEntries = true)
+            }
+    )
     public BranchDto updateBranch(UUID id, BranchDto branchDto) throws Exception {
         Branch existing = branchRepo.findById(id).orElseThrow(
                 () -> new Exception("Branch doesn't exist...")
@@ -51,11 +74,19 @@ public class BranchServiceImpl implements BranchService {
         existing.setOpenTime(branchDto.getOpenTime());
         existing.setCloseTime(branchDto.getCloseTime());
         existing.setUpdatedAt(LocalDateTime.now());
+
         Branch updatedBranch = branchRepo.save(existing);
         return BranchMapper.toDto(updatedBranch);
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(key = "#id"),
+                    @CacheEvict(value = "branches-by-store", allEntries = true),
+                    @CacheEvict(value = "branches-page", allEntries = true)
+            }
+    )
     public void deleteBranch(UUID id) throws Exception {
         Branch existing = branchRepo.findById(id).orElseThrow(
                 () -> new Exception("Branch doesn't exist...")
@@ -64,14 +95,16 @@ public class BranchServiceImpl implements BranchService {
     }
 
     @Override
+    @Cacheable(value = "branches-page", key = "#storeId + '-' + #page + '-' + #size")
     public Page<BranchDto> getAllBranchesByStoreId(UUID storeId, int page, int size) {
-        Pageable pageable = PageRequest.of(page,size);
-        return branchRepo.findByStoreId(storeId,pageable).map(BranchMapper::toDto);
+        Pageable pageable = PageRequest.of(page, size);
+        return branchRepo.findByStoreId(storeId, pageable).map(BranchMapper::toDto);
     }
 
     @Override
+    @Cacheable(key = "#id")
     public BranchDto getBranchById(UUID id) throws Exception {
-        Branch existing =  branchRepo.findById(id).orElseThrow(
+        Branch existing = branchRepo.findById(id).orElseThrow(
                 () -> new Exception("Branch doesn't exist...")
         );
         return BranchMapper.toDto(existing);

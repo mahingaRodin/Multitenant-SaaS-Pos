@@ -11,6 +11,10 @@ import com.msp.repositories.UserRepository;
 import com.msp.services.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,6 +28,7 @@ import java.util.Collection;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "users")
 public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final CustomUserImpl customUserImpl;
@@ -31,10 +36,17 @@ public class AuthServiceImpl implements AuthService {
     private UserRepository userRepo;
     @Autowired
     private JwtProvider provider;
-    private CustomUserImpl userImpl;
-
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.user.id")
+            },
+            evict = {
+                    @CacheEvict(value = "users-page", allEntries = true),
+                    @CacheEvict(value = "users-by-email", key = "#userDto.email")
+            }
+    )
     public AuthResponse signup(UserDto userDto) throws UserException {
         User user = userRepo.findByEmail(userDto.getEmail());
         if(user != null) {
@@ -67,6 +79,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.user.id")
+            },
+            evict = {
+                    @CacheEvict(value = "users-page", allEntries = true)
+            }
+    )
     public AuthResponse login(UserDto userDto) {
         String email = userDto.getEmail();
         String password = userDto.getPassword();

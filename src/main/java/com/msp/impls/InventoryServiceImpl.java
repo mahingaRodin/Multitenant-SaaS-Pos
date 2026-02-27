@@ -10,6 +10,11 @@ import com.msp.repositories.InventoryRepository;
 import com.msp.repositories.ProductRepository;
 import com.msp.services.InventoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,12 +26,22 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class InventoryServiceImpl  implements InventoryService {
+@CacheConfig(cacheNames = "inventory")
+public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "inventory-by-branch", allEntries = true),
+                    @CacheEvict(value = "inventory-by-product-branch", allEntries = true)
+            }
+    )
     public InventoryDto createInventory(InventoryDto inventoryDto) throws Exception {
         Branch branch = branchRepository.findById(inventoryDto.getBranchId()).orElseThrow(
                 () -> new Exception("Branch Doesn't Exist")
@@ -40,9 +55,18 @@ public class InventoryServiceImpl  implements InventoryService {
     }
 
     @Override
-    public InventoryDto updateInventory(UUID id,InventoryDto inventoryDto) throws Exception {
+    @Caching(
+            put = {
+                    @CachePut(key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "inventory-by-branch", allEntries = true),
+                    @CacheEvict(value = "inventory-by-product-branch", allEntries = true)
+            }
+    )
+    public InventoryDto updateInventory(UUID id, InventoryDto inventoryDto) throws Exception {
         Inventory inventory = inventoryRepository.findById(id).orElseThrow(
-                () ->new Exception("Inventory Not Found!")
+                () -> new Exception("Inventory Not Found!")
         );
         inventory.setQuantity(inventoryDto.getQuantity());
         Inventory updatedInventory = inventoryRepository.save(inventory);
@@ -50,6 +74,13 @@ public class InventoryServiceImpl  implements InventoryService {
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(key = "#id"),
+                    @CacheEvict(value = "inventory-by-branch", allEntries = true),
+                    @CacheEvict(value = "inventory-by-product-branch", allEntries = true)
+            }
+    )
     public void deleteInventory(UUID id) throws Exception {
         Inventory inventory = inventoryRepository.findById(id).orElseThrow(
                 () -> new Exception("Inventory Not Found!")
@@ -58,25 +89,26 @@ public class InventoryServiceImpl  implements InventoryService {
     }
 
     @Override
+    @Cacheable(key = "#id")
     public InventoryDto getInventoryById(UUID id) throws Exception {
         Inventory inventory = inventoryRepository.findById(id).orElseThrow(
-                ()-> new Exception("Inventory Not Found!")
+                () -> new Exception("Inventory Not Found!")
         );
         return InventoryMapper.toDto(inventory);
     }
 
     @Override
+    @Cacheable(value = "inventory-by-product-branch", key = "#productId + '-' + #branchId")
     public InventoryDto getInventoryByProductIdAndBranchId(UUID productId, UUID branchId) {
         Inventory inventory = inventoryRepository.findByProductIdAndBranchId(productId, branchId);
         return InventoryMapper.toDto(inventory);
     }
 
     @Override
-    public Page<InventoryDto> getAllInventoryByBranchId(UUID branchId,int page, int size) {
-        Pageable pageable = PageRequest.of(page,size);
-        Page<Inventory> inventories = inventoryRepository.findByBranchId(branchId,pageable);
-        return inventories.map(
-                InventoryMapper::toDto
-        );
+    @Cacheable(value = "inventory-by-branch", key = "#branchId + '-' + #page + '-' + #size")
+    public Page<InventoryDto> getAllInventoryByBranchId(UUID branchId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Inventory> inventories = inventoryRepository.findByBranchId(branchId, pageable);
+        return inventories.map(InventoryMapper::toDto);
     }
 }

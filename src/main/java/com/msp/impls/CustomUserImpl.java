@@ -1,9 +1,10 @@
 package com.msp.impls;
 
-
 import com.msp.models.User;
 import com.msp.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,13 +16,14 @@ import java.util.Collection;
 import java.util.Collections;
 
 @Service
+@CacheConfig(cacheNames = "user-details")
 public class CustomUserImpl implements UserDetailsService {
     @Autowired
     private UserRepository userRepo;
 
     @Override
+    @Cacheable(key = "#username")
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-
         User user = userRepo.findByEmail(username);
         if(user == null) {
             throw new UsernameNotFoundException("User with email: "+ username + " not found");

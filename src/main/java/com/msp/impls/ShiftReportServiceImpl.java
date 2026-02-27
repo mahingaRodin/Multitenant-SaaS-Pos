@@ -11,6 +11,11 @@ import com.msp.repositories.UserRepository;
 import com.msp.services.ShiftService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "shifts")
 public class ShiftReportServiceImpl implements ShiftService {
     private final ShiftReportRepository shiftReportRepository;
     private final UserService userService;
@@ -29,8 +35,18 @@ public class ShiftReportServiceImpl implements ShiftService {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
 
-
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "shifts-all", allEntries = true),
+                    @CacheEvict(value = "shifts-by-branch", allEntries = true),
+                    @CacheEvict(value = "shifts-by-cashier", allEntries = true),
+                    @CacheEvict(value = "shifts-current", allEntries = true)
+            }
+    )
     public ShiftReportDto startShift() throws Exception {
         User currentUser = userService.getCurrentUser();
         LocalDateTime shiftStart = LocalDateTime.now();
@@ -53,6 +69,18 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "shifts-all", allEntries = true),
+                    @CacheEvict(value = "shifts-by-branch", allEntries = true),
+                    @CacheEvict(value = "shifts-by-cashier", allEntries = true),
+                    @CacheEvict(value = "shifts-current", allEntries = true),
+                    @CacheEvict(value = "shifts-by-date", allEntries = true)
+            }
+    )
     public ShiftReportDto endShift(UUID shiftReportId, LocalDateTime shiftEnd) throws Exception {
         User currentUser = userService.getCurrentUser();
         ShiftReport shiftReport = shiftReportRepository.findTopByCashierAndShiftEndIsNullOrderByShiftStartDesc(currentUser)
@@ -86,6 +114,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Cacheable(key = "#id")
     public ShiftReportDto getShiftReportById(UUID id) throws Exception {
         return shiftReportRepository.findById(id)
                 .map(ShiftReportMapper::toDto)
@@ -95,6 +124,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Cacheable(value = "shifts-all", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<ShiftReportDto> getAllShiftReports(Pageable pageable) {
         return shiftReportRepository.findAll(pageable).map(
                 ShiftReportMapper::toDto
@@ -102,6 +132,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Cacheable(value = "shifts-by-branch", key = "#branchId")
     public List<ShiftReportDto> getShiftReportByBranchId(UUID branchId) {
         List<ShiftReport> reports = shiftReportRepository.findByBranchId(branchId);
         return reports.stream().map(
@@ -110,6 +141,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Cacheable(value = "shifts-by-cashier", key = "#cashierId")
     public List<ShiftReportDto> getShiftReportByCashierId(UUID cashierId) {
         List<ShiftReport> reports = shiftReportRepository.findByCashierId(cashierId);
         return reports.stream().map(
@@ -118,6 +150,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Cacheable(value = "shifts-current", key = "#cashierId != null ? #cashierId : 'current'")
     public ShiftReportDto getCurrentShiftProgress(UUID cashierId) throws Exception {
         User currentUser = userService.getCurrentUser();
         ShiftReport shift = shiftReportRepository
@@ -156,6 +189,7 @@ public class ShiftReportServiceImpl implements ShiftService {
     }
 
     @Override
+    @Cacheable(value = "shifts-by-date", key = "#cashierId + '-' + #date")
     public ShiftReportDto getShiftByCashierAndDate(UUID cashierId, LocalDateTime date) throws Exception {
         User cashier = userRepository.findById(cashierId).orElseThrow(
                 ()-> new Exception("Cashier Not Found with given Id: " + cashierId)
@@ -169,8 +203,7 @@ public class ShiftReportServiceImpl implements ShiftService {
         return ShiftReportMapper.toDto(report);
     }
 
-
-    //helpers
+    //helpers (no caching needed for private methods)
     private List<PaymentSummary> getPaymentSummaries(List<Order> orders, double totalSales) {
         Map<EPaymentType,List<Order>> grouped = orders.stream()
                 .collect(Collectors.groupingBy(order->order.getPaymentType() != null?

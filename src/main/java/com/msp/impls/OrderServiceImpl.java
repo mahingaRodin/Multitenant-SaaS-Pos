@@ -14,6 +14,11 @@ import com.msp.services.OrderService;
 import com.msp.services.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "orders")
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final UserService userService;
@@ -36,12 +42,23 @@ public class OrderServiceImpl implements OrderService {
     private final BranchRepository branchRepository;
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "orders-by-branch", allEntries = true),
+                    @CacheEvict(value = "orders-by-cashier", allEntries = true),
+                    @CacheEvict(value = "orders-by-customer", allEntries = true),
+                    @CacheEvict(value = "orders-today", allEntries = true),
+                    @CacheEvict(value = "orders-recent", allEntries = true)
+            }
+    )
     public OrderDto createOrder(OrderDto orderDto) throws Exception {
         User cashier = userService.getCurrentUser();
         System.out.println("current_user: " +cashier.getId());
         System.out.println("Cashier branch: " + (cashier.getBranch() != null ? cashier.getBranch().getId() : null));
-//        Branch branch = cashier.getBranch();
-//        if (branch == null) throw new Exception("Branch Not Found!");
+
         Branch branch = branchRepository.findById(orderDto.getBranchId()).orElseThrow(
                 () -> new EntityNotFoundException("Branch not found")
         );
@@ -83,6 +100,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(key = "#id")
     public OrderDto getOrderById(UUID id) throws Exception {
         return orderRepository.findById(id)
                 .map(OrderMapper::toDto)
@@ -92,6 +110,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = "orders-by-branch", key = "#branchId + '-' + #customerId + '-' + #cashierId + '-' + #paymentType + '-' + #orderStatus + '-' + #page + '-' + #size")
     public Page<OrderDto> getOrdersByBranch(UUID branchId,
                                             UUID customerId,
                                             UUID cashierId,
@@ -115,6 +134,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = "orders-by-cashier", key = "#cashierId + '-' + #page + '-' + #size")
     public Page<OrderDto> getOrderByCashier(UUID cashierId, int page, int size) {
         Pageable pageable = PageRequest.of(page,size);
         return orderRepository.findByCashier_Id(cashierId,pageable)
@@ -122,6 +142,16 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(key = "#id"),
+                    @CacheEvict(value = "orders-by-branch", allEntries = true),
+                    @CacheEvict(value = "orders-by-cashier", allEntries = true),
+                    @CacheEvict(value = "orders-by-customer", allEntries = true),
+                    @CacheEvict(value = "orders-today", allEntries = true),
+                    @CacheEvict(value = "orders-recent", allEntries = true)
+            }
+    )
     public void deleteOrder(UUID id) throws Exception {
         Order order = orderRepository.findById(id).orElseThrow(
                 () -> new Exception("Order not Found with id: "+id)
@@ -130,6 +160,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = "orders-today", key = "#branchId + '-' + #page + '-' + #size")
     public Page<OrderDto> getTodayOrderByBranch(UUID branchId, int page, int size) throws Exception {
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
@@ -143,6 +174,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Cacheable(value = "orders-by-customer", key = "#customerId + '-' + #page + '-' + #size")
     public Page<OrderDto> getOrderByCustomerId(UUID customerId, int page, int size) throws Exception {
         Pageable pageable = PageRequest.of(page,size);
         return orderRepository.findByCustomerId(customerId,pageable)
@@ -152,7 +184,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Page<OrderDto> getTop5RecentOrdersByBranchId(UUID branchId,int page ,int size) throws Exception {
+    @Cacheable(value = "orders-recent", key = "#branchId + '-' + #page + '-' + #size")
+    public Page<OrderDto> getTop5RecentOrdersByBranchId(UUID branchId, int page, int size) throws Exception {
         Pageable pageable = PageRequest.of(page,size);
         return orderRepository.findTop5ByBranchIdOrderByCreatedAtDesc(branchId,pageable)
                 .map(

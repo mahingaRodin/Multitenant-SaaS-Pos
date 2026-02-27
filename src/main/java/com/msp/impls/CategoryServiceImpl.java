@@ -11,6 +11,11 @@ import com.msp.repositories.StoreRepository;
 import com.msp.services.CategoryService;
 import com.msp.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,12 +27,22 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "categories")
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository catRepo;
     private final UserService userService;
     private final StoreRepository storeRepo;
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#result.id")
+            },
+            evict = {
+                    @CacheEvict(value = "categories-by-store", allEntries = true),
+                    @CacheEvict(value = "categories-page", allEntries = true)
+            }
+    )
     public CategoryDto createCategory(CategoryDto categoryDto) throws Exception {
         User user = userService.getCurrentUser();
         Store store = storeRepo.findById(categoryDto.getStoreId()).orElseThrow(
@@ -43,18 +58,26 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Page<CategoryDto> getCategoriesByStore(UUID storeId,int page,int size) {
-        Pageable pageable = PageRequest.of(page,size);
-        return catRepo.findByStoreId(storeId,pageable)
-                .map(
-                        CategoryMapper::toDto
-                );
+    @Cacheable(value = "categories-page", key = "#storeId + '-' + #page + '-' + #size")
+    public Page<CategoryDto> getCategoriesByStore(UUID storeId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return catRepo.findByStoreId(storeId, pageable)
+                .map(CategoryMapper::toDto);
     }
 
     @Override
+    @Caching(
+            put = {
+                    @CachePut(key = "#id")
+            },
+            evict = {
+                    @CacheEvict(value = "categories-by-store", allEntries = true),
+                    @CacheEvict(value = "categories-page", allEntries = true)
+            }
+    )
     public CategoryDto updateCategory(UUID id, CategoryDto categoryDto) throws Exception {
         Category category = catRepo.findById(id).orElseThrow(
-                ()-> new Exception("Category Not Found")
+                () -> new Exception("Category Not Found")
         );
         User user = userService.getCurrentUser();
         category.setName(categoryDto.getName());
@@ -63,20 +86,36 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    @Caching(
+            evict = {
+                    @CacheEvict(key = "#id"),
+                    @CacheEvict(value = "categories-by-store", allEntries = true),
+                    @CacheEvict(value = "categories-page", allEntries = true)
+            }
+    )
     public void deleteCategory(UUID id) throws Exception {
-    Category category = catRepo.findById(id).orElseThrow(
-            () -> new Exception("Category Doesn't Exist!")
-    );
-    User user = userService.getCurrentUser();
-    checkAuthority(user, category.getStore());
-    catRepo.delete(category);
+        Category category = catRepo.findById(id).orElseThrow(
+                () -> new Exception("Category Doesn't Exist!")
+        );
+        User user = userService.getCurrentUser();
+        checkAuthority(user, category.getStore());
+        catRepo.delete(category);
     }
+
+    @Cacheable(key = "#id")
+    public CategoryDto getCategoryById(UUID id) throws Exception {
+        Category category = catRepo.findById(id).orElseThrow(
+                () -> new Exception("Category Not Found")
+        );
+        return CategoryMapper.toDto(category);
+    }
+
 
     private void checkAuthority(User user, Store store) throws Exception {
         boolean isAdmin = user.getRole().equals(EUserRole.ROLE_STORE_ADMIN);
         boolean isManager = user.getRole().equals(EUserRole.ROLE_STORE_MANAGER);
         boolean isSameStore = user.equals(store.getStoreAdmin());
-        if((!isAdmin && !isManager) && !isSameStore) {
+        if ((!isAdmin && !isManager) && !isSameStore) {
             throw new Exception("You do not have permission to manage this category");
         }
     }
