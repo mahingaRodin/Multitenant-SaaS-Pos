@@ -32,6 +32,7 @@ public class JwtValidator extends OncePerRequestFilter {
         return uri.startsWith("/msp/swagger-ui")
                 || uri.startsWith("/msp/v3/api-docs")
                 || uri.startsWith("/msp/actuator")
+                || uri.startsWith("/msp/api/auth")
                 || uri.equals("/msp/swagger-ui.html")
                 || uri.startsWith("/msp/favicon.ico")
                 || uri.startsWith("/msp/webjars");
