@@ -6,7 +6,7 @@ metadata:
   labels:
     app: pos-backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: pos-backend
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: pos-backend
-          image: headie1/pos-backend:0.0.1
+          image: headie1/pos-backend:0.0.2
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
@@ -52,10 +52,10 @@ spec:
                   key: jwt-secret
           resources:
             requests:
-              memory: "512Mi"
-              cpu: "250m"
+              memory: "256Mi"
+              cpu: "100m"
             limits:
-              memory: "1Gi"
+              memory: "512Mi"
               cpu: "500m"
           livenessProbe:
             httpGet:
