@@ -30,7 +30,7 @@ public class Branch {
     private String phone;
     private String email;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> workingDays;
 
     private LocalTime openTime;

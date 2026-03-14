@@ -39,13 +39,13 @@ public class ShiftReport {
     @Transient
     private List<PaymentSummary> paymentSummaries;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Product> topSellingProducts;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Order> recentOrders;
 
-    @OneToMany(mappedBy = "shiftReport", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "shiftReport", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Refund> refunds;
 
 }

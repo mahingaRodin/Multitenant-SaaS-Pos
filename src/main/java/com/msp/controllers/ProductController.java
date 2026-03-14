@@ -132,7 +132,6 @@ public class ProductController {
                     content = @Content
             )
     })
-    @PreAuthorize("hasAnyAuthority('ROLE_STORE_ADMIN','ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_BRANCH_MANAGER')")
     @GetMapping("/store/{storeId}")
     public ResponseEntity<Page<ProductDto>> getAllProducts(
             @Parameter(
@@ -182,7 +181,6 @@ public class ProductController {
                     content = @Content
             )
     })
-    @PreAuthorize("hasAnyAuthority('ROLE_STORE_ADMIN','ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_BRANCH_MANAGER')")
     @GetMapping("/store/{storeId}/search")
     public ResponseEntity<Page<ProductDto>> searchByKeyword(
             @Parameter(

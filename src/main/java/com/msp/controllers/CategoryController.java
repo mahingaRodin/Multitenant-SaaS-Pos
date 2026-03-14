@@ -117,7 +117,6 @@ public class CategoryController {
             )
     })
     @GetMapping("/store/{storeId}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_STORE_ADMIN','ROLE_STORE_MANAGER','ROLE_BRANCH_MANAGER','ROLE_BRANCH_CASHIER')")
     public ResponseEntity<Page<CategoryDto>> getCategoriesByStoreId(
             @Parameter(
                     name = "storeId",

@@ -88,7 +88,6 @@ public class BranchController {
             summary = "Get all branches by store ID",
             description = "Retrieves a list of all branches associated with a specific store ID"
     )
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_BRANCH_MANAGER','ROLE_STORE_ADMIN')")
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",

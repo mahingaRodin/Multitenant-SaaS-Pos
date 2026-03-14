@@ -66,7 +66,6 @@ public class StoreController {
                         @ApiResponse(responseCode = "404", description = "Store not found with the given ID", content = @Content),
                         @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content)
         })
-        @PreAuthorize("hasAnyAuthority('ROLE_STORE_ADMIN','ROLE_SUPER_ADMIN','ROLE_BRANCH_MANAGER','ROLE_STORE_MANAGER')")
         @GetMapping("/{id}")
         public ResponseEntity<StoreDto> getStoreById(
                         @Parameter(name = "id", description = "UUID of the store to retrieve", required = true, example = "123e4567-e89b-12d3-a456-426614174000") @PathVariable UUID id,
@@ -83,7 +82,7 @@ public class StoreController {
                         @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN or MANAGER role required", content = @Content),
                         @ApiResponse(responseCode = "500", description = "Internal server error", content = @Content),
                         @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN or MANAGER role required", content = @Content) })
-        @PreAuthorize("hasAnyAuthority('ROLE_STORE_ADMIN','ROLE_SUPER_ADMIN','ROLE_BRANCH_MANAGER','ROLE_STORE_MANAGER')")
+        @PreAuthorize("hasAnyAuthority('ROLE_STORE_ADMIN','ROLE_SUPER_ADMIN','ROLE_BRANCH_MANAGER','ROLE_STORE_MANAGER','ROLE_CUSTOMER')")
         @GetMapping
         public ResponseEntity<Page<StoreDto>> getAllStores(
                         @Parameter(name = "page", description = "Page number (0-based)", example = "0") @RequestParam(defaultValue = "0") int page,
