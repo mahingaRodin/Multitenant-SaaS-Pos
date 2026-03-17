@@ -31,7 +31,8 @@ public class Branch {
     private String email;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    private List<String> workingDays;
+    @Builder.Default
+    private List<String> workingDays = new java.util.ArrayList<>();
 
     private LocalTime openTime;
     private LocalTime closeTime;

@@ -239,7 +239,7 @@ public class InventoryController {
                     content = @Content
             )
     })
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_STORE_ADMIN','ROLE_BRANCH_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_STORE_ADMIN','ROLE_BRANCH_MANAGER','ROLE_CUSTOMER')")
     @GetMapping("/branch/{branchId}/product/{productId}")
     public ResponseEntity<InventoryDto> getInventoryByProductAndBranchId(
             @Parameter(
@@ -297,7 +297,7 @@ public class InventoryController {
                     content = @Content
             )
     })
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_STORE_ADMIN','ROLE_BRANCH_MANAGER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPER_ADMIN','ROLE_STORE_MANAGER','ROLE_STORE_ADMIN','ROLE_BRANCH_MANAGER','ROLE_CUSTOMER')")
     @GetMapping("/branch/{branchId}")
     public ResponseEntity<Page<InventoryDto>> getInventoryBranch(
             @Parameter(

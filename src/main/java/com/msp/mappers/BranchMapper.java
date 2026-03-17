@@ -15,7 +15,7 @@ public class BranchMapper {
                 .address(branch.getAddress())
                 .phone(branch.getPhone())
                 .email(branch.getEmail())
-                .workingDays(branch.getWorkingDays())
+                .workingDays(branch.getWorkingDays() != null ? new java.util.ArrayList<>(branch.getWorkingDays()) : new java.util.ArrayList<>())
                 .openTime(branch.getOpenTime())
                 .closeTime(branch.getCloseTime())
                 .createdAt(branch.getCreatedAt())
