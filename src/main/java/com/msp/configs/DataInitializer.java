@@ -1,5 +1,6 @@
 package com.msp.configs;
 
+import com.msp.enums.EStoreStatus;
 import com.msp.enums.EUserRole;
 import com.msp.models.Branch;
 import com.msp.models.Store;
@@ -31,21 +32,57 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         log.info("Checking the Initial Data...");
 
-        Store defaultStore = ensureDefaultStore();
+        // Create admin user first (without store/branch)
+        User adminUser = createAdminUser();
+
+        // Now create store with admin ID
+        Store defaultStore = ensureDefaultStore(adminUser);
+
+        // Create branch with store
         Branch defaultBranch = ensureDefaultBranch(defaultStore);
 
-        createAdminUser(defaultStore, defaultBranch);
+        // Update admin with store and branch
+        updateAdminWithStoreAndBranch(adminUser, defaultStore, defaultBranch);
+
         logCacheInfo();
         log.info("Data initialization Complete!");
     }
 
-    private Store ensureDefaultStore() {
+    private User createAdminUser() {
+        String adminEmail = "mahingarodin@gmail.com";
+        User existingUser = userRepository.findByEmail(adminEmail);
+
+        if (existingUser == null) {
+            log.info("Creating admin user...");
+            User admin = User.builder()
+                    .id(UUID.randomUUID())
+                    .email(adminEmail)
+                    .password(passwordEncoder.encode("admin!123"))
+                    .firstName("Mahinga")
+                    .lastName("Rodin")
+                    .role(EUserRole.ROLE_SUPER_ADMIN)
+                    .phone("+250794415318")
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .lastLogin(LocalDateTime.now())
+                    .build();
+
+            return userRepository.save(admin);
+        }
+        return existingUser;
+    }
+
+    private Store ensureDefaultStore(User adminUser) {
         if (storeRepository.count() == 0) {
             log.info("Creating default store...");
             Store store = new Store();
             store.setBrand("SaaS POS Default");
             store.setStoreType("General Retail");
             store.setDescription("Automatic initialization store");
+            store.setStoreAdmin(adminUser);
+            store.setStatus(EStoreStatus.ACTIVE); // Set status as active
+            store.setCreatedAt(LocalDateTime.now());
+            store.setUpdatedAt(LocalDateTime.now());
             return storeRepository.save(store);
         }
         return storeRepository.findAll().get(0);
@@ -69,54 +106,23 @@ public class DataInitializer implements CommandLineRunner {
         return branchRepository.findAll().get(0);
     }
 
-    private void createAdminUser(Store store, Branch branch) {
-        String adminEmail = "mahingarodin@gmail.com";
-        User existingUser = userRepository.findByEmail(adminEmail);
+    private void updateAdminWithStoreAndBranch(User admin, Store store, Branch branch) {
+        log.info("Updating admin with store and branch...");
+        boolean changed = false;
 
-        if (existingUser == null) {
-            log.info("Creating admin user...");
-            User admin = User.builder()
-                    .id(UUID.randomUUID())
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode("admin!123"))
-                    .firstName("Mahinga")
-                    .lastName("Rodin")
-                    .role(EUserRole.ROLE_SUPER_ADMIN)
-                    .phone("+250794415318")
-                    .store(store)
-                    .branch(branch)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .lastLogin(LocalDateTime.now())
-                    .build();
+        if (admin.getStore() == null) {
+            admin.setStore(store);
+            changed = true;
+        }
 
+        if (admin.getBranch() == null) {
+            admin.setBranch(branch);
+            changed = true;
+        }
+
+        if (changed) {
             userRepository.save(admin);
-            log.info("Admin user created and linked to store/branch!");
-        } else {
-            log.info("Updating existing admin user permissions...");
-            boolean changed = false;
-
-            if (existingUser.getRole() != EUserRole.ROLE_SUPER_ADMIN) {
-                existingUser.setRole(EUserRole.ROLE_SUPER_ADMIN);
-                changed = true;
-            }
-
-            if (existingUser.getStore() == null) {
-                existingUser.setStore(store);
-                changed = true;
-            }
-
-            if (existingUser.getBranch() == null) {
-                existingUser.setBranch(branch);
-                changed = true;
-            }
-
-            if (changed) {
-                userRepository.save(existingUser);
-                log.info("Admin user updated and synchronized.");
-            } else {
-                log.info("Admin user already synchronized.");
-            }
+            log.info("Admin updated with store and branch!");
         }
     }
 
