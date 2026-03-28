@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -75,6 +76,7 @@ public class DataInitializer implements CommandLineRunner {
         if (existingUser == null) {
             log.info("Creating admin user...");
             User admin = User.builder()
+                    .id(UUID.randomUUID())
                     .email(adminEmail)
                     .password(passwordEncoder.encode("admin!123"))
                     .firstName("Mahinga")

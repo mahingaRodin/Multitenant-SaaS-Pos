@@ -10,7 +10,8 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - http:
+    - host: pos.5.180.181.195.nip.io
+      http:
         paths:
           - path: /msp(/|$)(.*)
             pathType: ImplementationSpecific
