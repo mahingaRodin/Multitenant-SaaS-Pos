@@ -13,11 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -35,20 +37,18 @@ public class DataInitializer implements CommandLineRunner {
         log.info("=== Starting Data Initialization ===");
 
         try {
-            // Create or get admin user
+            // Create data in a specific order with proper flushing
             User adminUser = createOrGetAdminUser();
             log.info("Admin user: {} (ID: {})", adminUser.getEmail(), adminUser.getId());
 
-            // Create or get default store
             Store defaultStore = createOrGetDefaultStore(adminUser);
             log.info("Default store: {} (ID: {})", defaultStore.getBrand(), defaultStore.getId());
 
-            // Create or get default branch
             Branch defaultBranch = createOrGetDefaultBranch(defaultStore);
             log.info("Default branch: {} (ID: {})", defaultBranch.getName(), defaultBranch.getId());
 
-            // Update admin with store and branch
-            updateAdminWithStoreAndBranch(adminUser, defaultStore, defaultBranch);
+            // Update admin with store and branch in a separate transaction
+            updateAdminWithStoreAndBranch(adminUser.getId(), defaultStore.getId(), defaultBranch.getId());
 
             log.info("=== Data Initialization Complete! ===");
             logCacheInfo();
@@ -59,15 +59,16 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public User createOrGetAdminUser() {
         String adminEmail = "mahingarodin@gmail.com";
-        User existingUser = userRepository.findByEmail(adminEmail);
 
-        if (existingUser != null) {
+        Optional<User> existingUserOpt = Optional.ofNullable(userRepository.findByEmail(adminEmail));
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
             log.info("Admin user already exists with ID: {}", existingUser.getId());
-            // Refresh to avoid version conflicts
-            return userRepository.findById(existingUser.getId()).orElse(existingUser);
+            return existingUser;
         }
 
         log.info("Creating new admin user...");
@@ -84,10 +85,13 @@ public class DataInitializer implements CommandLineRunner {
                 .lastLogin(LocalDateTime.now())
                 .build();
 
-        return userRepository.save(admin);
+        // Use saveAndFlush to immediately persist and avoid version issues
+        User savedAdmin = userRepository.saveAndFlush(admin);
+        log.info("Admin user created with ID: {}", savedAdmin.getId());
+        return savedAdmin;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Store createOrGetDefaultStore(User adminUser) {
         List<Store> existingStores = storeRepository.findAll();
 
@@ -100,7 +104,7 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Updating existing store with admin user...");
                 existingStore.setStoreAdmin(adminUser);
                 existingStore.setStatus(EStoreStatus.ACTIVE);
-                return storeRepository.save(existingStore);
+                return storeRepository.saveAndFlush(existingStore);
             }
 
             return existingStore;
@@ -114,10 +118,10 @@ public class DataInitializer implements CommandLineRunner {
         store.setStoreAdmin(adminUser);
         store.setStatus(EStoreStatus.ACTIVE);
 
-        return storeRepository.save(store);
+        return storeRepository.saveAndFlush(store);
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Branch createOrGetDefaultBranch(Store store) {
         List<Branch> existingBranches = branchRepository.findAll();
 
@@ -129,7 +133,7 @@ public class DataInitializer implements CommandLineRunner {
             if (existingBranch.getStore() == null) {
                 log.info("Updating existing branch with store...");
                 existingBranch.setStore(store);
-                return branchRepository.save(existingBranch);
+                return branchRepository.saveAndFlush(existingBranch);
             }
 
             return existingBranch;
@@ -147,27 +151,33 @@ public class DataInitializer implements CommandLineRunner {
                 .closeTime(LocalTime.of(20, 0))
                 .build();
 
-        return branchRepository.save(branch);
+        return branchRepository.saveAndFlush(branch);
     }
 
-    @Transactional
-    public void updateAdminWithStoreAndBranch(User admin, Store store, Branch branch) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateAdminWithStoreAndBranch(UUID adminId, UUID storeId, UUID branchId) {
         log.info("Updating admin with store and branch...");
 
         try {
-            // Get a fresh copy of the admin to avoid version conflicts
-            User freshAdmin = userRepository.findById(admin.getId())
-                    .orElseThrow(() -> new RuntimeException("Admin not found with ID: " + admin.getId()));
+            // Fetch fresh copies from database
+            User freshAdmin = userRepository.findById(adminId)
+                    .orElseThrow(() -> new RuntimeException("Admin not found with ID: " + adminId));
+
+            Store store = storeRepository.findById(storeId)
+                    .orElseThrow(() -> new RuntimeException("Store not found with ID: " + storeId));
+
+            Branch branch = branchRepository.findById(branchId)
+                    .orElseThrow(() -> new RuntimeException("Branch not found with ID: " + branchId));
 
             boolean needsUpdate = false;
 
-            if (freshAdmin.getStore() == null || !freshAdmin.getStore().getId().equals(store.getId())) {
+            if (freshAdmin.getStore() == null) {
                 log.info("Setting store for admin...");
                 freshAdmin.setStore(store);
                 needsUpdate = true;
             }
 
-            if (freshAdmin.getBranch() == null || !freshAdmin.getBranch().getId().equals(branch.getId())) {
+            if (freshAdmin.getBranch() == null) {
                 log.info("Setting branch for admin...");
                 freshAdmin.setBranch(branch);
                 needsUpdate = true;
@@ -175,16 +185,15 @@ public class DataInitializer implements CommandLineRunner {
 
             if (needsUpdate) {
                 freshAdmin.setUpdatedAt(LocalDateTime.now());
-                User updatedAdmin = userRepository.save(freshAdmin);
-                log.info("Admin updated successfully with store ID: {} and branch ID: {}",
-                        updatedAdmin.getStore().getId(),
-                        updatedAdmin.getBranch().getId());
+                // Use saveAndFlush to ensure immediate persistence
+                userRepository.saveAndFlush(freshAdmin);
+                log.info("Admin updated successfully with store and branch");
             } else {
-                log.info("Admin already has correct store and branch");
+                log.info("Admin already has store and branch configured");
             }
 
         } catch (Exception e) {
-            log.error("Error updating admin: {}", e.getMessage());
+            log.error("Error updating admin: {}", e.getMessage(), e);
             throw e;
         }
     }
