@@ -35,15 +35,19 @@ public class DataInitializer implements CommandLineRunner {
         log.info("=== Starting Data Initialization ===");
 
         try {
+            // Create or get admin user
             User adminUser = createOrGetAdminUser();
             log.info("Admin user: {} (ID: {})", adminUser.getEmail(), adminUser.getId());
 
+            // Create or get default store
             Store defaultStore = createOrGetDefaultStore(adminUser);
             log.info("Default store: {} (ID: {})", defaultStore.getBrand(), defaultStore.getId());
 
+            // Create or get default branch
             Branch defaultBranch = createOrGetDefaultBranch(defaultStore);
             log.info("Default branch: {} (ID: {})", defaultBranch.getName(), defaultBranch.getId());
 
+            // Update admin with store and branch
             updateAdminWithStoreAndBranch(adminUser, defaultStore, defaultBranch);
 
             log.info("=== Data Initialization Complete! ===");
@@ -55,13 +59,15 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
-    private User createOrGetAdminUser() {
+    @Transactional
+    public User createOrGetAdminUser() {
         String adminEmail = "mahingarodin@gmail.com";
         User existingUser = userRepository.findByEmail(adminEmail);
 
         if (existingUser != null) {
             log.info("Admin user already exists with ID: {}", existingUser.getId());
-            return existingUser;
+            // Refresh to avoid version conflicts
+            return userRepository.findById(existingUser.getId()).orElse(existingUser);
         }
 
         log.info("Creating new admin user...");
@@ -78,12 +84,11 @@ public class DataInitializer implements CommandLineRunner {
                 .lastLogin(LocalDateTime.now())
                 .build();
 
-        User savedAdmin = userRepository.save(admin);
-        log.info("Admin user created with ID: {}", savedAdmin.getId());
-        return savedAdmin;
+        return userRepository.save(admin);
     }
 
-    private Store createOrGetDefaultStore(User adminUser) {
+    @Transactional
+    public Store createOrGetDefaultStore(User adminUser) {
         List<Store> existingStores = storeRepository.findAll();
 
         if (!existingStores.isEmpty()) {
@@ -95,9 +100,7 @@ public class DataInitializer implements CommandLineRunner {
                 log.info("Updating existing store with admin user...");
                 existingStore.setStoreAdmin(adminUser);
                 existingStore.setStatus(EStoreStatus.ACTIVE);
-                Store updatedStore = storeRepository.save(existingStore);
-                log.info("Store updated with admin ID: {}", updatedStore.getStoreAdmin().getId());
-                return updatedStore;
+                return storeRepository.save(existingStore);
             }
 
             return existingStore;
@@ -111,16 +114,11 @@ public class DataInitializer implements CommandLineRunner {
         store.setStoreAdmin(adminUser);
         store.setStatus(EStoreStatus.ACTIVE);
 
-        // Let the @PrePersist handle createdAt and status
-        Store savedStore = storeRepository.save(store);
-        log.info("Default store created with ID: {} and Admin ID: {}",
-                savedStore.getId(),
-                savedStore.getStoreAdmin() != null ? savedStore.getStoreAdmin().getId() : "NULL");
-
-        return savedStore;
+        return storeRepository.save(store);
     }
 
-    private Branch createOrGetDefaultBranch(Store store) {
+    @Transactional
+    public Branch createOrGetDefaultBranch(Store store) {
         List<Branch> existingBranches = branchRepository.findAll();
 
         if (!existingBranches.isEmpty()) {
@@ -131,9 +129,7 @@ public class DataInitializer implements CommandLineRunner {
             if (existingBranch.getStore() == null) {
                 log.info("Updating existing branch with store...");
                 existingBranch.setStore(store);
-                Branch updatedBranch = branchRepository.save(existingBranch);
-                log.info("Branch updated with store ID: {}", updatedBranch.getStore().getId());
-                return updatedBranch;
+                return branchRepository.save(existingBranch);
             }
 
             return existingBranch;
@@ -151,39 +147,45 @@ public class DataInitializer implements CommandLineRunner {
                 .closeTime(LocalTime.of(20, 0))
                 .build();
 
-        Branch savedBranch = branchRepository.save(branch);
-        log.info("Default branch created with ID: {}", savedBranch.getId());
-        return savedBranch;
+        return branchRepository.save(branch);
     }
 
-    private void updateAdminWithStoreAndBranch(User admin, Store store, Branch branch) {
-        log.info("Checking admin's store and branch associations...");
-        boolean needsUpdate = false;
+    @Transactional
+    public void updateAdminWithStoreAndBranch(User admin, Store store, Branch branch) {
+        log.info("Updating admin with store and branch...");
 
-        if (admin.getStore() == null) {
-            log.info("Setting store for admin...");
-            admin.setStore(store);
-            needsUpdate = true;
-        } else {
-            log.info("Admin already has store: {}", admin.getStore().getId());
-        }
+        try {
+            // Get a fresh copy of the admin to avoid version conflicts
+            User freshAdmin = userRepository.findById(admin.getId())
+                    .orElseThrow(() -> new RuntimeException("Admin not found with ID: " + admin.getId()));
 
-        if (admin.getBranch() == null) {
-            log.info("Setting branch for admin...");
-            admin.setBranch(branch);
-            needsUpdate = true;
-        } else {
-            log.info("Admin already has branch: {}", admin.getBranch().getId());
-        }
+            boolean needsUpdate = false;
 
-        if (needsUpdate) {
-            admin.setUpdatedAt(LocalDateTime.now());
-            User updatedAdmin = userRepository.save(admin);
-            log.info("Admin updated with store ID: {} and branch ID: {}",
-                    updatedAdmin.getStore().getId(),
-                    updatedAdmin.getBranch().getId());
-        } else {
-            log.info("Admin already properly configured with store and branch");
+            if (freshAdmin.getStore() == null || !freshAdmin.getStore().getId().equals(store.getId())) {
+                log.info("Setting store for admin...");
+                freshAdmin.setStore(store);
+                needsUpdate = true;
+            }
+
+            if (freshAdmin.getBranch() == null || !freshAdmin.getBranch().getId().equals(branch.getId())) {
+                log.info("Setting branch for admin...");
+                freshAdmin.setBranch(branch);
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                freshAdmin.setUpdatedAt(LocalDateTime.now());
+                User updatedAdmin = userRepository.save(freshAdmin);
+                log.info("Admin updated successfully with store ID: {} and branch ID: {}",
+                        updatedAdmin.getStore().getId(),
+                        updatedAdmin.getBranch().getId());
+            } else {
+                log.info("Admin already has correct store and branch");
+            }
+
+        } catch (Exception e) {
+            log.error("Error updating admin: {}", e.getMessage());
+            throw e;
         }
     }
 
