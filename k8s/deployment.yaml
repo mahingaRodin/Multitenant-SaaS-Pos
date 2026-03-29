@@ -50,6 +50,8 @@ spec:
                 secretKeyRef:
                   name: pos-backend-secrets
                   key: jwt-secret
+            - name: SERVER_FORWARD_HEADERS_STRATEGY
+              value: "framework"
           resources:
             requests:
               memory: "256Mi"
