@@ -36,11 +36,11 @@ public class User {
     private String email;
     private String phone;
 
-    @ManyToOne
+    @ManyToOne(optional = true)
     @JsonIgnoreProperties({ "storeAdmin" })
     private Store store;
 
-    @ManyToOne
+    @ManyToOne(optional = true)
     @JsonIgnoreProperties({ "manager", "store" })
     private Branch branch;
 
